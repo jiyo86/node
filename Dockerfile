@@ -1,17 +1,17 @@
-# Use a lighter version of Node as a parent image
-FROM node:alpine
-# Set the working directory to /server
+FROM node
 WORKDIR /server
-# copy package.json into the container at /server
-COPY package*.json /server/
+COPY package.json ./
 COPY tsconfig.json ./
 COPY src ./src
-
-# install dependencies
+RUN ls -a
 RUN npm install
-# Copy the current directory contents into the container at /server
-COPY . /server/
-# Make port 8080 available to the world outside this container
-EXPOSE 8080
-# Run the app when the container launches
-CMD ["npm", "start"]
+RUN npm run build
+## this is stage two , where the app actually runs
+FROM node:
+WORKDIR /server
+COPY package.json ./
+RUN npm install --only=production
+COPY --from=0 /server/dist .
+RUN npm install pm2 -g
+EXPOSE 80
+CMD ["pm2-runtime","app.js"]
